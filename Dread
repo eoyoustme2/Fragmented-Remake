@@ -1,0 +1,230 @@
+_G.DreadClockSpawned = true
+
+local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local mainUI = player:WaitForChild("PlayerGui"):WaitForChild("MainUI")
+local mainGame = require(mainUI.Initiator.Main_Game)
+
+local latestRoomNum = ReplicatedStorage.GameData.LatestRoom.Value
+local currentRoom = Workspace.CurrentRooms:FindFirstChild(tostring(latestRoomNum))
+
+if not currentRoom then return end
+
+local DreadClock = Instance.new("Model")
+DreadClock.Name = "DreadClock"
+DreadClock.Parent = currentRoom
+
+local success, objects = pcall(function()
+	return game:GetObjects("rbxassetid://73481800813918")
+end)
+
+if not success or not objects or #objects == 0 then
+	return
+end
+
+local eyes = objects[1]
+eyes.Parent = DreadClock
+
+local num = 0
+if currentRoom:FindFirstChild("PathfindNodes") then
+	num = math.floor(#currentRoom.PathfindNodes:GetChildren() / 2)
+end
+
+local targetCFrame
+if num > 0 and currentRoom.PathfindNodes:FindFirstChild(tostring(num)) then
+	targetCFrame = currentRoom.PathfindNodes[tostring(num)].CFrame + Vector3.new(0, 6, 0)
+else
+	local roomCenter = currentRoom:FindFirstChild(currentRoom.Name) or currentRoom.PrimaryPart
+	targetCFrame = roomCenter and (roomCenter.CFrame + Vector3.new(0, 6, 0)) or CFrame.new()
+end
+
+eyes:PivotTo(targetCFrame)
+
+if eyes.PrimaryPart then
+	eyes.PrimaryPart.Anchored = true
+end
+
+local startTime = tick()
+local floatingConn
+floatingConn = RunService.Heartbeat:Connect(function()
+	if eyes and eyes.Parent and eyes.PrimaryPart then
+		local delta = tick() - startTime
+		local offsetY = math.sin(delta * 2.5) * 0.35
+		eyes:PivotTo(targetCFrame * CFrame.new(0, offsetY, 0))
+	else
+		if floatingConn then floatingConn:Disconnect() end
+	end
+end)
+
+local CC = Lighting:FindFirstChild("DreadCC") or Instance.new("ColorCorrectionEffect")
+CC.Name = "DreadCC"
+CC.TintColor = Color3.fromRGB(255, 255, 255)
+CC.Contrast = 0
+CC.Saturation = 0
+CC.Parent = Lighting
+
+local Blur = Lighting:FindFirstChild("DreadBlur") or Instance.new("BlurEffect")
+Blur.Name = "DreadBlur"
+Blur.Size = 0
+Blur.Parent = Lighting
+
+local function flickerLightsOnce()
+	for _, v in ipairs(currentRoom:GetDescendants()) do
+		if v:IsA("Light") then
+			v.Brightness = math.random() > 0.5 and (v.Brightness * 0.2) or v.Brightness
+		end
+	end
+end
+
+local slowSequence = {"11:00 PM", "11:01 PM", "11:02 PM", "11:03 PM", "11:04 PM", "11:05 PM"}
+for _, timeText in ipairs(slowSequence) do
+	mainGame.caption(timeText, true)
+	task.wait(6)
+end
+
+local buildUpSound = Instance.new("Sound")
+buildUpSound.SoundId = "rbxassetid://99794298159713"
+buildUpSound.Volume = 2
+buildUpSound.Looped = true
+buildUpSound.Parent = workspace
+
+local function customCameraShake(duration, maxMagnitude, roughness)
+	local startTime = os.clock()
+	local conn
+	local Camera = workspace.CurrentCamera
+
+	conn = RunService.RenderStepped:Connect(function()
+		local elapsed = os.clock() - startTime
+		if elapsed >= duration then
+			conn:Disconnect()
+			return
+		end
+
+		local progress = math.clamp(elapsed / duration, 0, 1)
+
+		local easedProgress = TweenService:GetValue(progress, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+
+		local currentMagnitude = maxMagnitude * easedProgress
+
+		local rotX = math.noise(elapsed * roughness, 0, 0) * currentMagnitude
+		local rotY = math.noise(0, elapsed * roughness, 0) * currentMagnitude
+		local rotZ = math.noise(0, 0, elapsed * roughness) * currentMagnitude
+
+		Camera.CFrame = Camera.CFrame * CFrame.Angles(math.rad(rotX), math.rad(rotY), math.rad(rotZ))
+	end)
+end
+
+local glitchEndTime = tick() + 9
+local colorList = {
+	Color3.fromRGB(255, 255, 255),   
+	Color3.fromRGB(141, 141, 141), 
+	Color3.fromRGB(81, 81, 81),   
+	Color3.fromRGB(0, 0, 0)  
+}
+local a = true
+
+task.spawn(function()
+while a  do
+if tick() < glitchEndTime then
+	
+			local function GetGitSound(GithubSnd, SoundName)
+				local url = GithubSnd
+				if not isfile(SoundName .. ".mp3") then
+					writefile(SoundName .. ".mp3", game:HttpGet(url))
+				end
+				local sound = Instance.new("Sound")
+				sound.SoundId = (getcustomasset or getsynasset)(SoundName .. ".mp3")
+				return sound
+			end
+			local Jumpscare = GetGitSound("https://github.com/eoyoustme/Mayhem-Remake/blob/main/ThreatKillYourLife.mp3?raw=true","ThreatKillYourLife")
+			Jumpscare.Parent = workspace
+			Jumpscare.Volume = 10
+			Jumpscare.PlaybackSpeed = 1
+			Jumpscare.PlaybackRegionsEnabled = true
+			Jumpscare.PlaybackRegion = NumberRange.new(0,9)
+			Jumpscare:Play()
+			
+	customCameraShake(9, 160, 200)
+	a = false
+end
+wait(0.1)
+end
+end)
+
+while tick() < glitchEndTime do
+	local randHour = math.random(1, 12)
+	local randMin = string.format("%02d", math.random(0, 59))
+	local randAmPm = math.random(1, 4) == 1 and "AM" or "PM" or "DREAD" or "TIME OUT"
+	mainGame.caption(randHour .. ":" .. randMin .. " " .. randAmPm, true)
+
+	local randomColor = colorList[math.random(1, #colorList)]
+	TweenService:Create(CC, TweenInfo.new(0.12), {
+		TintColor = randomColor,
+		Contrast = math.random(1, 4) / 10,
+		Saturation = -math.random(4, 10) / 10
+	}):Play()
+
+	TweenService:Create(Blur, TweenInfo.new(0.12), {Size = math.random(2, 7)}):Play()
+
+	flickerLightsOnce()
+	task.wait(0.1)
+end
+
+buildUpSound:Stop()
+if eyes then eyes:Destroy() end
+buildUpSound:Destroy()
+
+mainGame.caption("12:00 PM", true)
+
+TweenService:Create(CC, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+	Contrast = 0.45,
+	Saturation = -1,
+	TintColor = Color3.fromRGB(255, 255, 255)
+}):Play()
+TweenService:Create(Blur, TweenInfo.new(0.4), {Size = 12}):Play()
+
+local soundPart = eyes.PrimaryPart or DreadClock
+local sound = Instance.new("Sound")
+sound.SoundId = "rbxassetid://101099139477472"
+sound.Volume = 8
+sound.PlaybackSpeed = 0.85
+sound.RollOffMaxDistance = 150
+sound.RollOffMinDistance = 10
+sound.Parent = workspace
+sound:Play()
+TweenService:Create(sound, TweenInfo.new(3.5), {PlaybackSpeed = 0}):Play()
+
+task.spawn(function()
+for _, v in ipairs(workspace:GetDescendants()) do
+	local playback = v.PlaybackSpeed
+	if v:IsA("Sound") then
+		TweenService:Create(v, TweenInfo.new(3.5), {PlaybackSpeed = 0}):Play()
+		task.delay(3.5, function()
+			v.PlaybackSpeed = playback
+		end)
+	end
+end
+end)
+
+task.spawn(function()
+	pcall(function()
+		loadstring(game:HttpGet("https://github.com/eoyoustme2/Fragmented-Remake/raw/main/DreadEntity"))()
+	end)
+end)
+
+task.wait(3.5)
+
+TweenService:Create(CC, TweenInfo.new(5), {Contrast = 0, Saturation = 0, TintColor = Color3.fromRGB(255, 255, 255)}):Play()
+TweenService:Create(Blur, TweenInfo.new(5), {Size = 0}):Play()
+sound:Destroy()
+wait(5)
+
+if floatingConn then floatingConn:Disconnect() end
+if CC then CC:Destroy() end
+if Blur then Blur:Destroy() end
