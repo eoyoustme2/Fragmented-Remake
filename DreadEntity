@@ -212,6 +212,7 @@ local function triggerJumpscare()
     killSound.SoundId = "rbxassetid://18459521002"
     killSound.Name = "Dear god death sound chat"
     killSound.Volume = 10
+	killSound.PlaybackSpeed = 0.85
     killSound.Looped = true
 
     Instance.new("FlangeSoundEffect", killSound).Rate = 0.2
@@ -424,9 +425,9 @@ sound.Volume = 10
 sound.PlaybackSpeed = 0.1
 sound:Play()
 
-TweenService:Create(sound, TweenInfo.new(10, Enum.EasingStyle.Linear), {PlaybackSpeed = 1}):Play()
+TweenService:Create(sound, TweenInfo.new(2, Enum.EasingStyle.Linear), {PlaybackSpeed = 1}):Play()
 TweenService:Create(distantSound, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {PlaybackSpeed = 1}):Play()
-TweenService:Create(sound, TweenInfo.new(10, Enum.EasingStyle.Linear), {Volume = 0}):Play()
+TweenService:Create(sound, TweenInfo.new(5, Enum.EasingStyle.Linear), {Volume = 0}):Play()
 
 ApplyPurpleTextureToRoom(roomObj)
 
@@ -454,7 +455,7 @@ task.spawn(function()
                 fearLabel.Text = string.format("dread: %d%%", math.floor(fearLevel))
             end
 
-            if dist <= 4.5 then
+            if dist <= 10 then
                 isAlive = false
                 isAttacking = false
                 if roomChangedConnection then
@@ -496,15 +497,15 @@ while (os.clock() - roamStartTime) < roamDuration and isAttacking and not isDesp
     currentTween.Completed:Wait()
 end
 
-local currentSpeed = 16 
-local targetMaxSpeed = 70
+local currentSpeed = 1
+local targetMaxSpeed = 7000
 
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
 rayParams.FilterDescendantsInstances = {dread}
 
 local chaseStartTime = os.clock()
-local chaseMaxDuration = 12
+local chaseMaxDuration = 12000
 
 while (os.clock() - chaseStartTime) < chaseMaxDuration and isAttacking and isAlive and not isDespawning do
     local char = localPlayer.Character
